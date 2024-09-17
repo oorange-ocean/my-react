@@ -19,3 +19,6 @@ export interface ReactElementType {
 
     __mark: string; // 可能用于内部标记或调试
 }
+
+// 定义 Action type
+export type Action<State> = State | ((prevState: State) => State);
