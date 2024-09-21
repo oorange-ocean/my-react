@@ -1,5 +1,5 @@
 // packages/react-reconciler/src/fiberReconciler.ts
-import { Container } from "./hostConfig";
+import { Container } from "hostConfig";
 import { FiberNode, FiberRootNode } from "./fiber";
 import { HostRoot } from "./workTags";
 import {

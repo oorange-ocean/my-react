@@ -28,7 +28,7 @@ function ChildReconciler(shouldTrackSideEffects: boolean) {
     function placeSingleChild(fiber: FiberNode) {
         // 首屏渲染且追踪副作用时，才添加标记
         if (shouldTrackSideEffects && fiber.alternate == null) {
-            fiber.flag |= Placement;
+            fiber.flags |= Placement;
         }
         return fiber;
     }

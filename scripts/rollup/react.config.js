@@ -65,9 +65,3 @@ export default [
         plugins: getBaseRollupPlugins(),
     },
 ];
-
-// 补充知识:
-// 1. Rollup 是一个 JavaScript 模块打包器,专注于 ES6 模块的打包。
-// 2. UMD (Universal Module Definition) 是一种通用模块定义格式,可以在多种环境中使用。
-// 3. package.json 是 Node.js 项目的配置文件,包含了项目的元数据和依赖信息。
-// 4. 插件系统是 Rollup 的核心特性之一,允许自定义构建过程。
