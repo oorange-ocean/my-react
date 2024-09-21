@@ -2,9 +2,10 @@ import { FiberNode, FiberRootNode, createWorkInProgress } from "./fiber";
 import { beginWork } from "./beginWork";
 import { completeWork } from "./completeWork";
 import { HostRoot } from "./workTags";
-
+import { MutationMask, NoFlags } from "./fiberFlags";
+import { commitMutationEffects } from "./commitWork";
 let workInProgress: FiberNode | null = null;
-
+declare const __DEV__: boolean;
 // 调度功能
 export function scheduleUpdateOnFiber(fiber: FiberNode) {
     const root = markUpdateFromFiberToRoot(fiber);
@@ -21,21 +22,6 @@ function markUpdateFromFiberToRoot(fiber: FiberNode) {
         return node.stateNode;
     }
     return null;
-}
-
-function renderRoot(root: FiberRootNode) {
-    // 初始化 workInProgress 变量
-    prepareFreshStack(root);
-    do {
-        try {
-            // 深度优先遍历
-            workLoop();
-            break;
-        } catch (e) {
-            console.warn("workLoop发生错误：", e);
-            workInProgress = null;
-        }
-    } while (true);
 }
 
 // 初始化 workInProgress 变量
@@ -79,4 +65,58 @@ function completeUnitOfWork(fiber: FiberNode) {
         node = node.return;
         workInProgress = node;
     } while (node !== null);
+}
+
+function renderRoot(root: FiberRootNode) {
+    // 初始化 workInProgress 变量
+    prepareFreshStack(root);
+    do {
+        try {
+            // 深度优先遍历
+            workLoop();
+            break;
+        } catch (e) {
+            console.warn("workLoop发生错误：", e);
+            workInProgress = null;
+        }
+    } while (true);
+
+    // 创建根 Fiber 树的 Root Fiber
+    const finishedWork = root.current.alternate;
+    root.finishedWork = finishedWork;
+
+    // 提交阶段的入口函数
+    commitRoot(root);
+}
+
+function commitRoot(root: FiberRootNode) {
+    const finishedWork = root.finishedWork;
+    if (finishedWork === null) {
+        return;
+    }
+
+    if (__DEV__) {
+        console.log("commit 阶段开始");
+    }
+
+    // 重置
+    root.finishedWork = null;
+
+    // 判断是否存在 3 个子阶段需要执行的操作
+    const subtreeHasEffects =
+        (finishedWork.subtreeFlags & MutationMask) !== NoFlags;
+    const rootHasEffects = (finishedWork.flags & MutationMask) !== NoFlags;
+
+    if (subtreeHasEffects || rootHasEffects) {
+        // TODO: BeforeMutation
+
+        // Mutation
+        commitMutationEffects(finishedWork);
+        // Fiber 树切换，workInProgress 变成 current
+        root.current = finishedWork;
+
+        // TODO: Layout
+    } else {
+        root.current = finishedWork;
+    }
 }

@@ -17,8 +17,9 @@ export class FiberNode {
     memorizedProps: Props | null;
     memorizedState: any;
     alternate: FiberNode | null;
-    flag: Flags;
+    flags: Flags;
     updateQueue: unknown;
+    subtreeFlags: Flags;
 
     constructor(tag: WorkTag, pendingProps: Props, key: Key) {
         // 类型
@@ -40,7 +41,8 @@ export class FiberNode {
         this.memorizedState = null; // 更新完成后新的 State
         this.updateQueue = null; // 更新计划队列
         this.alternate = null; // 指向节点的备份节点，用于在协调过程中进行比较
-        this.flag = NoFlags; // 表示节点的副作用类型，如更新、插入、删除等
+        this.flags = NoFlags; // 表示节点的副作用类型，如更新、插入、删除等
+        this.subtreeFlags = NoFlags; // 表示子树的副作用类型
     }
 }
 
@@ -76,7 +78,7 @@ export const createWorkInProgress = (
         // 非首屏渲染时（update）
         workInProgress.pendingProps = pendingProps;
         // 将 effect 链表重置为空，以便在更新过程中记录新的副作用
-        workInProgress.flag = NoFlags;
+        workInProgress.flags = NoFlags;
     }
     // 复制当前节点的大部分属性
     workInProgress.type = current.type;
