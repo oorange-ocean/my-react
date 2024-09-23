@@ -1,4 +1,3 @@
-// packages/react-reconciler/src/updateQueue.ts
 import { Action } from "shared/ReactTypes";
 import { Update } from "./fiberFlags";
 
