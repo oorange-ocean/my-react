@@ -2,10 +2,10 @@ import { ReactElementType } from "shared/ReactTypes";
 import { FiberNode } from "./fiber";
 import { UpdateQueue, processUpdateQueue } from "./updateQueue";
 import {
+    FunctionComponent,
     HostComponent,
     HostRoot,
     HostText,
-    FunctionComponent,
 } from "./workTags";
 import { reconcileChildFibers, mountChildFibers } from "./childFiber";
 import { renderWithHooks } from "./fiberHooks";
@@ -55,15 +55,15 @@ function updateHostComponent(workInProgress: FiberNode) {
     return workInProgress.child;
 }
 
-function updateHostText() {
-    // 没有子节点，直接返回 null
-    return null;
-}
-
 function updateFunctionComponent(workInProgress: FiberNode) {
     const nextChildren = renderWithHooks(workInProgress);
     reconcileChildren(workInProgress, nextChildren);
     return workInProgress.child;
+}
+
+function updateHostText() {
+    // 没有子节点，直接返回 null
+    return null;
 }
 
 // 对比子节点的 current FiberNode 与 子节点的 ReactElement

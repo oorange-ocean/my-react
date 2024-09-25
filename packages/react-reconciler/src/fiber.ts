@@ -20,6 +20,7 @@ export class FiberNode {
     flags: Flags;
     updateQueue: unknown;
     subtreeFlags: Flags;
+    deletions: FiberNode[] | null;
 
     constructor(tag: WorkTag, pendingProps: Props, key: Key) {
         // 类型
@@ -43,6 +44,7 @@ export class FiberNode {
         this.alternate = null; // 指向节点的备份节点，用于在协调过程中进行比较
         this.flags = NoFlags; // 表示节点的副作用类型，如更新、插入、删除等
         this.subtreeFlags = NoFlags; // 表示子树的副作用类型
+        this.deletions = null; // 表示需要删除的子节点
     }
 }
 

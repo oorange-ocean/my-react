@@ -1,5 +1,6 @@
 import { Action } from "shared/ReactTypes";
 import { Update } from "./fiberFlags";
+import { Dispatch } from "react/src/currentDispatcher";
 
 // 定义 Update 数据结构
 export interface Update<State> {
@@ -11,6 +12,7 @@ export interface UpdateQueue<State> {
     shared: {
         pending: Update<State> | null;
     };
+    dispatch: Dispatch<State> | null;
 }
 
 // 创建 Update 实例的方法
@@ -26,6 +28,7 @@ export const createUpdateQueue = <State>(): UpdateQueue<State> => {
         shared: {
             pending: null,
         },
+        dispatch: null,
     };
 };
 
@@ -38,13 +41,10 @@ export const enqueueUpdate = <State>(
 };
 
 // 从 UpdateQueue 中消费 Update 的方法
-//接受两个参数：baseState（当前状态）和 pendingUpdate（待处理的更新，可能为 null）。
-//返回一个包含 memorizedState 属性的对象。
 export const processUpdateQueue = <State>(
     baseState: State,
     pendingUpdate: Update<State> | null
 ): { memorizedState: State } => {
-    // 创建一个 result 对象，初始时 memorizedState 设置为 baseState。
     const result: ReturnType<typeof processUpdateQueue<State>> = {
         memorizedState: baseState,
     };
