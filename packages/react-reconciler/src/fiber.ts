@@ -1,11 +1,16 @@
 import { Props, Key, Ref, ReactElementType } from "shared/ReactTypes";
-import { FunctionComponent, HostComponent, WorkTag } from "./workTags";
+import {
+    FunctionComponent,
+    HostComponent,
+    Fragment,
+    WorkTag,
+} from "./workTags";
 import { NoFlags, Flags } from "./fiberFlags";
 import { Container } from "hostConfig";
 declare const __DEV__: boolean;
 export class FiberNode {
     tag: WorkTag;
-    key: Key;
+    key: Key | null;
     stateNode: any;
     type: any;
     return: FiberNode | null;
@@ -18,14 +23,14 @@ export class FiberNode {
     memorizedState: any;
     alternate: FiberNode | null;
     flags: Flags;
-    updateQueue: unknown;
+    deletions: Array<FiberNode> | null;
     subtreeFlags: Flags;
-    deletions: FiberNode[] | null;
+    updateQueue: unknown;
 
     constructor(tag: WorkTag, pendingProps: Props, key: Key) {
         // 类型
         this.tag = tag;
-        this.key = key;
+        this.key = key || null;
         this.ref = null;
         this.stateNode = null; // 节点对应的实际 DOM 节点或组件实例
         this.type = null; // 节点的类型，可以是原生 DOM 元素、函数组件或类组件等
@@ -43,8 +48,8 @@ export class FiberNode {
         this.updateQueue = null; // 更新计划队列
         this.alternate = null; // 指向节点的备份节点，用于在协调过程中进行比较
         this.flags = NoFlags; // 表示节点的副作用类型，如更新、插入、删除等
-        this.subtreeFlags = NoFlags; // 表示子树的副作用类型
-        this.deletions = null; // 表示需要删除的子节点
+        this.subtreeFlags = NoFlags; // 表示子节点的副作用类型，如更新、插入、删除等
+        this.deletions = null; // 指向待删除的子节点，用于在协调过程中进行删除
     }
 }
 
@@ -81,6 +86,7 @@ export const createWorkInProgress = (
         workInProgress.pendingProps = pendingProps;
         // 将 effect 链表重置为空，以便在更新过程中记录新的副作用
         workInProgress.flags = NoFlags;
+        workInProgress.subtreeFlags = NoFlags;
     }
     // 复制当前节点的大部分属性
     workInProgress.type = current.type;
@@ -105,5 +111,10 @@ export function createFiberFromElement(element: ReactElementType): FiberNode {
 
     const fiber = new FiberNode(fiberTag, props, key);
     fiber.type = type;
+    return fiber;
+}
+
+export function createFiberFromFragment(elements: any[], key: Key): FiberNode {
+    const fiber = new FiberNode(Fragment, elements, key);
     return fiber;
 }

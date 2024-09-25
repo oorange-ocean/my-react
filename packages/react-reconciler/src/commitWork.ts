@@ -1,7 +1,9 @@
 import {
     Container,
+    Instance,
     appendChildToContainer,
     commitUpdate,
+    insertChildToContainer,
     removeChild,
 } from "hostConfig";
 import { FiberNode, FiberRootNode } from "./fiber";
@@ -19,7 +21,6 @@ import {
     HostText,
 } from "./workTags";
 declare const __DEV__: boolean;
-
 let nextEffect: FiberNode | null = null;
 
 export const commitMutationEffects = (finishedWork: FiberNode) => {
@@ -82,8 +83,52 @@ const commitPlacement = (finishedWork: FiberNode) => {
     if (__DEV__) {
         console.log("执行 Placement 操作", finishedWork);
     }
+    // parent DOM
     const hostParent = getHostParent(finishedWork) as Container;
-    appendPlacementNodeIntoContainer(finishedWork, hostParent);
+
+    // Host sibling
+    const sibling = getHostSibling(finishedWork);
+
+    appendPlacementNodeIntoContainer(finishedWork, hostParent, sibling);
+};
+
+// 获取兄弟 Host 节点
+const getHostSibling = (fiber: FiberNode) => {
+    let node: FiberNode = fiber;
+    findSibling: while (true) {
+        // 没有兄弟节点时，向上遍历
+        while (node.sibling == null) {
+            const parent = node.return;
+            if (
+                parent == null ||
+                parent.tag == HostComponent ||
+                parent.tag == HostRoot
+            ) {
+                return null;
+            }
+            node = parent;
+        }
+
+        // 向下遍历
+        node.sibling.return = node.return;
+        node = node.sibling;
+        while (node.tag !== HostText && node.tag !== HostComponent) {
+            // 不稳定的 Host 节点不能作为目标兄弟 Host 节点
+            if ((node.flags & Placement) !== NoFlags) {
+                continue findSibling;
+            }
+            if (node.child == null) {
+                continue findSibling;
+            } else {
+                node.child.return = node;
+                node = node.child;
+            }
+        }
+
+        if ((node.flags & Placement) == NoFlags) {
+            return node.stateNode;
+        }
+    }
 };
 
 // 获取 parent DOM
@@ -106,10 +151,17 @@ const getHostParent = (fiber: FiberNode) => {
 
 const appendPlacementNodeIntoContainer = (
     finishedWork: FiberNode,
-    hostParent: Container
+    hostParent: Container,
+    before?: Instance
 ) => {
     if (finishedWork.tag === HostComponent || finishedWork.tag === HostText) {
-        appendChildToContainer(finishedWork.stateNode, hostParent);
+        if (before) {
+            // 执行移动操作
+            insertChildToContainer(finishedWork.stateNode, hostParent, before);
+        } else {
+            // 执行插入操作
+            appendChildToContainer(finishedWork.stateNode, hostParent);
+        }
     } else {
         const child = finishedWork.child;
         if (child !== null) {
@@ -123,28 +175,42 @@ const appendPlacementNodeIntoContainer = (
     }
 };
 
+function recordChildrenToDelete(
+    childrenToDelete: FiberNode[],
+    unmountFiber: FiberNode
+) {
+    const lastOne = childrenToDelete[childrenToDelete.length - 1];
+    if (!lastOne) {
+        childrenToDelete.push(unmountFiber);
+    } else {
+        let node = lastOne.sibling;
+        while (node !== null) {
+            if (unmountFiber == node) {
+                childrenToDelete.push(unmountFiber);
+            }
+            node = node.sibling;
+        }
+    }
+}
+
 // 删除节点及其子树
 const commitDeletion = (childToDelete: FiberNode) => {
     if (__DEV__) {
         console.log("执行 Deletion 操作", childToDelete);
     }
 
-    // 子树的根节点
-    let rootHostNode: FiberNode | null = null;
+    // 跟踪需要移除的子树中的 Fiber 节点
+    const rootChildrenToDelete: FiberNode[] = [];
 
     // 递归遍历子树
     commitNestedUnmounts(childToDelete, (unmountFiber) => {
         switch (unmountFiber.tag) {
             case HostComponent:
-                if (rootHostNode === null) {
-                    rootHostNode = unmountFiber;
-                }
+                recordChildrenToDelete(rootChildrenToDelete, unmountFiber);
                 // TODO 解绑ref
                 return;
             case HostText:
-                if (rootHostNode === null) {
-                    rootHostNode = unmountFiber;
-                }
+                recordChildrenToDelete(rootChildrenToDelete, unmountFiber);
                 return;
             case FunctionComponent:
                 //  TODO useEffect unmount
@@ -156,11 +222,13 @@ const commitDeletion = (childToDelete: FiberNode) => {
         }
     });
 
-    // 移除 rootHostNode 的DOM
-    if (rootHostNode !== null) {
+    // 移除 rootChildrenToDelete 的DOM
+    if (rootChildrenToDelete.length !== 0) {
         // 找到待删除子树的根节点的 parent DOM
         const hostParent = getHostParent(childToDelete) as Container;
-        removeChild((rootHostNode as FiberNode).stateNode, hostParent);
+        rootChildrenToDelete.forEach((node) => {
+            removeChild(node.stateNode, hostParent);
+        });
     }
 
     childToDelete.return = null;
