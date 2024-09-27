@@ -1,13 +1,12 @@
 import { FiberNode } from "react-reconciler/src/fiber";
 import { HostComponent, HostText } from "react-reconciler/src/workTags";
 import { updateFiberProps, DOMElement } from "./SyntheticEvent";
-
+declare const __DEV__: boolean;
 export type Container = Element;
 export type Instance = Element;
 export type TextInstance = Text;
-declare const __DEV__: boolean;
+
 export const createInstance = (type: string, porps: any): Instance => {
-    // TODO: 处理 props
     const element = document.createElement(type) as unknown;
     updateFiberProps(element as DOMElement, porps);
     return element as DOMElement;
@@ -30,6 +29,14 @@ export const appendChildToContainer = (
     parent: Instance | Container
 ) => {
     parent.appendChild(child);
+};
+
+export const insertChildToContainer = (
+    child: Instance,
+    container: Container,
+    before: Instance
+) => {
+    container.insertBefore(child, before);
 };
 
 export const commitUpdate = (fiber: FiberNode) => {
@@ -66,10 +73,10 @@ export const removeChild = (
     container.removeChild(child);
 };
 
-export const insertChildToContainer = (
-    child: Instance,
-    container: Container,
-    before: Instance
-) => {
-    container.insertBefore(child, before);
-};
+export const scheduleMicroTask =
+    typeof queueMicrotask === "function"
+        ? queueMicrotask
+        : typeof Promise === "function"
+          ? (callback: (...args: any) => void) =>
+                Promise.resolve(null).then(callback)
+          : setTimeout;
