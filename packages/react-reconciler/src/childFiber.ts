@@ -8,9 +8,7 @@ import {
 import { REACT_ELEMENT_TYPE, REACT_FRAGMENT_TYPE } from "shared/ReactSymbols";
 import { Fragment, HostText } from "./workTags";
 import { ChildDeletion, Placement } from "./fiberFlags";
-
 declare const __DEV__: boolean;
-
 type ExistingChildren = Map<string | number, FiberNode>;
 
 function ChildReconciler(shouldTrackSideEffects: boolean) {

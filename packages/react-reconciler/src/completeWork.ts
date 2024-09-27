@@ -6,6 +6,7 @@ import {
 } from "hostConfig";
 import { FiberNode } from "./fiber";
 import {
+    Fragment,
     FunctionComponent,
     HostComponent,
     HostRoot,
@@ -21,6 +22,7 @@ export const completeWork = (workInProgress: FiberNode) => {
     switch (workInProgress.tag) {
         case HostRoot:
         case FunctionComponent:
+        case Fragment:
             bubbleProperties(workInProgress);
             return null;
 
@@ -63,7 +65,7 @@ export const completeWork = (workInProgress: FiberNode) => {
 };
 
 function updateHostText(current: FiberNode, workInProgress: FiberNode) {
-    const oldText = current.memorizedState.content;
+    const oldText = current.memorizedProps.content;
     const newText = workInProgress.pendingProps.content;
     if (oldText !== newText) {
         markUpdate(workInProgress);
@@ -71,7 +73,7 @@ function updateHostText(current: FiberNode, workInProgress: FiberNode) {
 }
 
 function updateHostComponent(current: FiberNode, workInProgress: FiberNode) {
-    const oldProps = current.memorizedState;
+    const oldProps = current.memorizedProps;
     const newProps = workInProgress.pendingProps;
 
     if (oldProps !== newProps) {
